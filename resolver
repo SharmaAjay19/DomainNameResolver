@@ -1,0 +1,89 @@
+#!/bin/bash
+DOMAIN_NAME="$1"
+QUERY_TYPE="$2"
+if [ "$QUERY_TYPE" == "reverse" ]
+then
+	dig -x $DOMAIN_NAME > output
+else
+	dig $DOMAIN_NAME $QUERY_TYPE > output
+fi
+FILE="output"
+answer="["
+authority="["
+additional="["
+details="{"
+fanswer=FALSE
+fauth=FALSE
+fadd=FALSE
+while read line; do
+	case $line in
+	"")
+		continue;;
+	";; ANSWER SECTION:")
+		fanswer=TRUE;;
+	";; AUTHORITY SECTION:")
+		fanswer=FALSE
+		fauth=TRUE;;
+	";; ADDITIONAL SECTION:")
+		fanswer=FALSE
+		fauth=FALSE
+		fadd=TRUE;;
+	";; Query time:"*)
+		fanswer=FALSE
+		fauth=FALSE
+		fadd=FALSE
+		y=( $line )
+		details="$details `echo -e "\\"time\\" : \\"${y[3]} ${y[4]}\\","`";;
+	";; WHEN:"*)
+		y=( $line )
+		details="$details `echo -e "\\"timestamp\\" : \\"${y[2]} ${y[3]} ${y[4]} ${y[5]} ${y[6]}\\","`";;
+	*)
+		if [ "$fanswer" == "TRUE" ]
+		then
+			y=( $line )
+			name=${y[0]}
+			if [ "$QUERY_TYPE" == "MX" ]
+			then
+				answer="$answer`echo "{\\"name\\" : \\"${name::-1}\\", \\"type\\" : \\"${y[3]}\\", \\"result\\" : \\"${y[4]} ${y[5]}\\"}"`,"
+			else
+				answer="$answer`echo "{\\"name\\" : \\"${name::-1}\\", \\"type\\" : \\"${y[3]}\\", \\"result\\" : \\"${y[4]}\\"}"`,"
+			fi
+		elif [ "$fauth" == "TRUE" ]
+		then
+			y=( $line )
+			name=${y[0]}
+			result=${y[4]}
+			authority="$authority`echo "{\\"name\\" : \\"${name::-1}\\", \\"type\\" : \\"${y[3]}\\", \\"result\\" : \\"${result::-1}\\"}"`,"
+		elif [ "$fadd" == "TRUE" ]
+		then
+			y=( $line )
+			name=${y[0]}
+			additional="$additional`echo "{\\"name\\" : \\"${name::-1}\\", \\"type\\" : \\"${y[3]}\\", \\"result\\" : \\"${y[4]}\\"}"`,"
+		fi
+	esac
+done < "$FILE"
+if [ "$answer" != "[" ]
+then
+	answer="${answer::-1}]"
+else
+	answer="[]"
+fi
+if [ "$authority" != "[" ]
+then
+	authority="${authority::-1}]"
+else
+	authority="[]"
+fi
+if [ "$additional" != "[" ]
+then
+	additional="${additional::-1}]"
+else
+	additional="[]"
+fi
+if [ "$details" != "{" ]
+then
+	details="${details::-1}}"
+else
+	details="{}"
+fi
+echo "{\"answer\" : $answer, \"authority\" : $authority, \"additional\" : $additional, \"details\" : $details}"

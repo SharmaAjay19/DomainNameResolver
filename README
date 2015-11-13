@@ -1,0 +1,37 @@
+This project is a demonstration of how the DNS system works. Carry out the following steps to make it working.
+Since the demonstration works on an apache server and interacts with mysql database, make sure you have both of these installed with php5 and there is interaction between the three.
+
+
+
+STEP - 1 Make your DNS server capable of handling queries whose data is not contained in its local database.
+Put the bash scripts "resolver" and "iterative" into your bin folder. This carries out the DNS queries related to domain names that are not found in the local database.
+
+make it an executable
+
+sudo chmod +x resolver
+sudo chmod +x iterative
+
+
+
+STEP - 2 Setting up your local domain matching table.
+Create a table named dns in the test database with the following fields:
+name varchar(256)
+type varchar(10)
+result varchar(256)
+uses int
+
+create table dns(name varchar(256), type varchar(10), result varchar(256), uses int);
+grant all privileges on *.* to root@localhost identified by '';
+
+
+
+
+STEP - 3 Providing permissions to apache server
+Let the apache user "www-data" own the www directory in which the source code is.
+
+sudo chown www-data /var/www/networks/src
+
+
+
+STEP - 4
+Load the page "query.php". Type in your query and press the appropriate button for the appropriate query.

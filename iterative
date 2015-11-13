@@ -1,0 +1,24 @@
+#!/bin/bash
+DOMAIN_NAME="$1"
+QUERY_TYPE="$2"
+if [ "$QUERY_TYPE" == "reverse" ]
+then
+	dig +trace -x $DOMAIN_NAME > output
+else
+	dig +trace $DOMAIN_NAME $QUERY_TYPE > output
+fi
+FILE="output"
+i="0"
+while read line; do
+	if [ $i -gt "2" ]
+	then
+		case $line in
+		";;"*)
+			echo -e ${line:3};;
+		*)
+			echo -e $line;;
+		esac
+	else
+		i=$((i+1))
+	fi
+done < "$FILE"

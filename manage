@@ -1,0 +1,6 @@
+#!usr/bin/bash
+count=`mysql test -e "select count(*) from dns;"`
+if [ $count -gt "1000" ]
+then
+	mysql test -e "delete from dns where uses=1;"
+fi
